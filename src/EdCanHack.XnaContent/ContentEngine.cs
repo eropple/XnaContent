@@ -140,12 +140,12 @@ namespace EdCanHack.XnaContent
         /// <param name="failOnUnmappedFiles">
         /// An optional parameter that determines whether the ContentEngine should throw an exception
         /// if a file passed in via Add(String filename) has no matching TypeMapping objects in the
-        /// search space.
+        /// search space. Defaults to true.
         /// </param>
         public ContentEngine(IEnumerable<String> userAssemblies, IEnumerable<TypeMapping> typeMappings,
                              String contentDirectory = null, String buildDirectory = null, 
                              Boolean stripFileExtensions = true, Boolean useDefaultTypeMappings = true,
-                             Boolean failOnUnmappedFiles = false)
+                             Boolean failOnUnmappedFiles = true)
         {
             _userAssemblies = new List<String>(userAssemblies);
             _typeMappings = new List<TypeMapping>(typeMappings);
