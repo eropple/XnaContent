@@ -70,6 +70,8 @@ namespace EdCanHack.XnaContent
             new Dictionary<String, QueuedContentFile>();
 
         private readonly String _overrideContentDirectory;
+        private readonly Boolean _failOnUnmappedFiles;
+        private readonly Boolean _useDefaultTypeMappings;
 
         public readonly String BuildDirectory;
         public String OutputDirectory { get { return Path.Combine(BuildDirectory, "bin/Content"); } }
@@ -102,7 +104,7 @@ namespace EdCanHack.XnaContent
         /// directory structure for the first .contentproj file found. For example, if your file
         /// is at D:/Project/Content/Textures/foo.png and the content project is at
         /// D:/Project/Content/Content.contentproj, then the computed content name will be
-        /// Textures/foo[.png] (with the extension dependent upon the value of stripFileExtensions).x
+        /// Textures/foo[.png] (with the extension dependent upon the value of stripFileExtensions).
         /// </param>
         /// <param name="buildDirectory">
         /// An optional parameter to specify where the compiled XNBs should be stored. Defaults to
@@ -115,14 +117,27 @@ namespace EdCanHack.XnaContent
         /// this parameter is false, then for content file "foo.png" the ContentEngine will
         /// generate an XNB file called "foo.png.xnb".
         /// </param>
+        /// <param name="useDefaultTypeMappings">
+        /// An optional parameter that determines whether the default type mappings (which map
+        /// various file extensions to the standard XNA importers and processors) should be used
+        /// to resolve filenames. Defaults to true.
+        /// </param>
+        /// <param name="failOnUnmappedFiles">
+        /// An optional parameter that determines whether the ContentEngine should throw an exception
+        /// if a file passed in via Add(String filename) has no matching TypeMapping objects in the
+        /// search space.
+        /// </param>
         public ContentEngine(IEnumerable<String> userAssemblies, IEnumerable<TypeMapping> typeMappings,
                              String contentDirectory = null, String buildDirectory = null, 
-                             Boolean stripFileExtensions = true)
+                             Boolean stripFileExtensions = true, Boolean useDefaultTypeMappings = true,
+                             Boolean failOnUnmappedFiles = false)
         {
             _userAssemblies = new List<String>(userAssemblies);
             _typeMappings = new List<TypeMapping>(typeMappings);
             _stripFileExtensions = stripFileExtensions;
             _overrideContentDirectory = contentDirectory;
+            _useDefaultTypeMappings = useDefaultTypeMappings;
+            _failOnUnmappedFiles = failOnUnmappedFiles;
 
             BuildDirectory = buildDirectory ?? ComputeBuildDirectory();
         }
@@ -134,12 +149,11 @@ namespace EdCanHack.XnaContent
         }
         protected virtual void Dispose(Boolean disposing)
         {
-            if (!IsDisposed)
-            {
-                IsDisposed = true;
-                CleanUpSelf();
-                CleanUpOldTempDirectories();
-            }
+            if (IsDisposed) return;
+            IsDisposed = true;
+            
+            CleanUpSelf();
+            CleanUpOldTempDirectories();
         }
 
         public IEnumerable<String> Filenames { get { return _files.Keys; } } 
@@ -147,16 +161,20 @@ namespace EdCanHack.XnaContent
 
         public void Add(String filename)
         {
-            TypeMapping tm = null; 
-            tm = _typeMappings.FirstOrDefault(t => t.FileMatcher.IsMatch(filename)) ??
-                 DefaultTypeMappings.FirstOrDefault(t => t.FileMatcher.IsMatch(filename));
+            TypeMapping tm = null;
+            tm = _typeMappings.FirstOrDefault(t => t.FileMatcher.IsMatch(filename));
+                 
+            if (_useDefaultTypeMappings && tm == null)
+            {
+                tm = DefaultTypeMappings.FirstOrDefault(t => t.FileMatcher.IsMatch(filename));
+            }
 
-            if (tm == null)
+            if (tm == null && _failOnUnmappedFiles)
             {
                 throw new ContentEngineException("No TypeMapping found for '{0}'.", filename);
             }
 
-            Add(filename, tm.ImporterType, tm.ProcessorType);
+            if (tm != null) Add(filename, tm.ImporterType, tm.ProcessorType);
         }
         public void Add(String filename, Type importerType, Type processorType)
         {

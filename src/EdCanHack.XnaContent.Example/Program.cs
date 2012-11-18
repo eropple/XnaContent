@@ -57,8 +57,13 @@ namespace EdCanHack.XnaContent.Example
             }
 
             WriteLine();
-            WriteLine(ConsoleColor.Cyan, "Running engine synchronously (will hang window for a while)...");
-            engine.Build();
+
+            for (Int32 i = 0; i < 3; ++i)
+            {
+                WriteLine(ConsoleColor.Cyan, "Engine pass #{0} (will hang window for a while)...", i);
+                engine.Build();
+            }
+
             WriteLine(ConsoleColor.Cyan, "Done!");
 
             WriteLine(ConsoleColor.Green, "All done! Press Enter to continue (will open the compiled output directory).");
