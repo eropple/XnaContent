@@ -20,11 +20,6 @@ This is intentional. I use it in an asynchronous manner, wrapped inside of a
 Task, but I didn't want to force consumers to necessarily do the same (though
 maybe I should have!).
 
-PLEASE NOTE: at present, I have not yet written mappings for all of the XNA
-types. If you'd like to provide a list of those mappings (even if you don't
-want to code it, test it, and do a pull request), please drop me an email. I'll
-get to it eventually otherwise, but I wanted to get this out there sooner.
-
 Questions, comments, suggestions - feel free to email me or to file an issue
 on Github.
 

@@ -23,6 +23,7 @@ using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
+using Microsoft.Xna.Framework.Content.Pipeline;
 using Microsoft.Xna.Framework.Content.Pipeline.Processors;
 
 #endregion
@@ -57,9 +58,23 @@ namespace EdCanHack.XnaContent
             "Microsoft.Xna.Framework.Content.Pipeline.VideoImporters" + XnaVersion
         };
 
+        // from: http://msdn.microsoft.com/en-us/library/bb447762.aspx
         private static readonly TypeMapping[] DefaultTypeMappings =
         {
-            T(@".*\.(png|jpeg|jpg|tga|bmp)$", null, typeof(TextureProcessor))
+            T(@".*\.fbw$", typeof(FbxImporter), typeof(ModelProcessor)),
+            T(@".*\.x$", typeof(XImporter), typeof(ModelProcessor)),
+
+            T(@".*\.fx$", typeof(EffectImporter), typeof(PassThroughProcessor)),
+
+            T(@".*\.spritefont$", typeof(FontDescriptionImporter), typeof(FontDescriptionProcessor)),
+
+            T(@".*\.(bmp|dds|dib|hdr|jpg|jpeg|pfm|png|ppm|tga)$", typeof(TextureImporter), typeof(TextureProcessor)),
+
+            T(@".*\.wav$", typeof(WavImporter), typeof(SoundEffectProcessor)),
+            T(@".*\.mp3$", typeof(Mp3Importer), typeof(SoundEffectProcessor)),
+            T(@".*\.wma$", typeof(WmaImporter), typeof(SoundEffectProcessor)),
+
+            T(@".*\.wmv$", typeof(WmvImporter), typeof(VideoProcessor))
         };
 
 

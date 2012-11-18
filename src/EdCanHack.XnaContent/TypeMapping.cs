@@ -15,9 +15,9 @@ using System.Text.RegularExpressions;
 namespace EdCanHack.XnaContent
 {
     /// <summary>
-    /// Used to seed a ContentEngine with default type mappings. For example, to create an equivalent
-    /// of the standard XNA texture processor, you can pass in a regex of ".*\.(png|jpeg|jpg|tga)",
-    /// an importer of null, and a processor of typeof(TextureProcessor).
+    /// Used to seed a ContentEngine with type mappings. For example, if you wish to
+    /// process all files with the .foo extension, you can pass in a regex of @".*\.foo",
+    /// with the importer and processor types you normally use.
     /// </summary>
     public class TypeMapping
     {
