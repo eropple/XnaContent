@@ -256,9 +256,13 @@ namespace EdCanHack.XnaContent
             try
             {
                 if (!Directory.Exists(BuildDirectory)) Directory.CreateDirectory(BuildDirectory);
-
+                
                 String projectPath = Path.Combine(BuildDirectory, "Content.contentproj");
                 String outputPath = Path.Combine(BuildDirectory, "bin");
+
+                if (File.Exists(projectPath)) File.Delete(projectPath);
+
+                ProjectCollection projectCollection = ProjectCollection.GlobalProjectCollection;
 
                 Project project = ConstructStandardProject(projectPath, outputPath);
 
@@ -276,7 +280,7 @@ namespace EdCanHack.XnaContent
                 }
 
                 ErrorLogger logger = new ErrorLogger();
-                BuildParameters parameters = new BuildParameters(ProjectCollection.GlobalProjectCollection)
+                BuildParameters parameters = new BuildParameters(projectCollection)
                 {
                     Loggers = new[] { logger }
                 };
@@ -290,22 +294,40 @@ namespace EdCanHack.XnaContent
                 BuildRequestData request = new BuildRequestData(project.CreateProjectInstance(), new String[0]);
                 build = BuildManager.DefaultBuildManager.PendBuildRequest(request);
 
-                build.ExecuteAsync(submission => {
-                    if (submission.BuildResult.OverallResult == BuildResultCode.Success && BuildFinished != null)
-                    {
-                        BuildFinished(BuildDirectory, OutputDirectory, submission);
-                    }
-                    else if (submission.BuildResult.OverallResult == BuildResultCode.Failure && BuildErrored != null)
-                    {
-                        BuildErrored(submission, logger.Errors, null);
-                    }
-                }, null);
+//                build.ExecuteAsync(submission => {
+//                    if (submission.BuildResult.OverallResult == BuildResultCode.Success && BuildFinished != null)
+//                    {
+//                        BuildFinished(BuildDirectory, OutputDirectory, submission);
+//                        ProjectCollection.GlobalProjectCollection.UnloadAllProjects();
+//                    }
+//                    else if (submission.BuildResult.OverallResult == BuildResultCode.Failure && BuildErrored != null)
+//                    {
+//                        BuildErrored(submission, logger.Errors, null);
+//                        ProjectCollection.GlobalProjectCollection.UnloadAllProjects();
+//                    }
+//                }, null);
 
-                build.WaitHandle.WaitOne();
+                build.Execute();
 
                 CleanUpOldTempDirectories();
 
-                return build.BuildResult.OverallResult == BuildResultCode.Success;
+                Boolean success = build.BuildResult.OverallResult == BuildResultCode.Success;
+
+                BuildManager.DefaultBuildManager.EndBuild();
+
+                if (success && BuildFinished != null)
+                {
+                    BuildFinished(BuildDirectory, OutputDirectory, build);
+                }
+                else if (BuildErrored != null)
+                {
+                    BuildErrored(build, logger.Errors, null);
+                }
+
+                ProjectCollection.GlobalProjectCollection.UnloadAllProjects();
+                ProjectCollection.GlobalProjectCollection.UnregisterAllLoggers();
+
+                return success;
             }
             catch (Exception ex)
             {
