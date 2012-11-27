@@ -88,6 +88,7 @@ namespace EdCanHack.XnaContent
         private readonly Boolean _failOnUnmappedFiles;
         private readonly Boolean _useDefaultTypeMappings;
         private readonly Boolean _cleanOnDispose;
+        private readonly Boolean _compressContent;
 
         public readonly String BuildDirectory;
         public String OutputDirectory { get { return Path.Combine(BuildDirectory, "bin/Content"); } }
@@ -143,13 +144,18 @@ namespace EdCanHack.XnaContent
         /// if a file passed in via Add(String filename) has no matching TypeMapping objects in the
         /// search space. Defaults to true.
         /// </param>
+        /// <param name="compressContent">
+        /// If true, runs compiled XNBs through the XNB compressor. Defaults to true.
+        /// </param>
         /// <param name="cleanOnDispose">
         /// If true, the created XNB files will be deleted when the engine is disposed or finalized.
+        /// Defaults to true.
         /// </param>
         public ContentEngine(IEnumerable<String> userAssemblies, IEnumerable<TypeMapping> typeMappings,
                              String contentDirectory = null, String buildDirectory = null, 
                              Boolean stripFileExtensions = true, Boolean useDefaultTypeMappings = true,
-                             Boolean failOnUnmappedFiles = true, Boolean cleanOnDispose = true)
+                             Boolean failOnUnmappedFiles = true, Boolean compressContent = true,
+                             Boolean cleanOnDispose = true)
         {
             _userAssemblies = new List<String>(userAssemblies);
             _typeMappings = new List<TypeMapping>(typeMappings);
@@ -158,6 +164,7 @@ namespace EdCanHack.XnaContent
             _useDefaultTypeMappings = useDefaultTypeMappings;
             _failOnUnmappedFiles = failOnUnmappedFiles;
             _cleanOnDispose = cleanOnDispose;
+            _compressContent = compressContent;
 
             BuildDirectory = buildDirectory ?? ComputeBuildDirectory();
         }
@@ -277,7 +284,7 @@ namespace EdCanHack.XnaContent
 
                 Project project = ConstructStandardProject(projectPath, outputPath);
 
-                //project.SetProperty("XnaCompressContent", "True");
+                project.SetProperty("XnaCompressContent", _compressContent.ToString());
 
                 foreach (QueuedContentFile q in _files.Values)
                 {
