@@ -87,6 +87,7 @@ namespace EdCanHack.XnaContent
         private readonly String _overrideContentDirectory;
         private readonly Boolean _failOnUnmappedFiles;
         private readonly Boolean _useDefaultTypeMappings;
+        private readonly Boolean _cleanOnDispose;
 
         public readonly String BuildDirectory;
         public String OutputDirectory { get { return Path.Combine(BuildDirectory, "bin/Content"); } }
@@ -142,10 +143,13 @@ namespace EdCanHack.XnaContent
         /// if a file passed in via Add(String filename) has no matching TypeMapping objects in the
         /// search space. Defaults to true.
         /// </param>
+        /// <param name="cleanOnDispose">
+        /// If true, the created XNB files will be deleted when the engine is disposed or finalized.
+        /// </param>
         public ContentEngine(IEnumerable<String> userAssemblies, IEnumerable<TypeMapping> typeMappings,
                              String contentDirectory = null, String buildDirectory = null, 
                              Boolean stripFileExtensions = true, Boolean useDefaultTypeMappings = true,
-                             Boolean failOnUnmappedFiles = true)
+                             Boolean failOnUnmappedFiles = true, Boolean cleanOnDispose = true)
         {
             _userAssemblies = new List<String>(userAssemblies);
             _typeMappings = new List<TypeMapping>(typeMappings);
@@ -153,6 +157,7 @@ namespace EdCanHack.XnaContent
             _overrideContentDirectory = contentDirectory;
             _useDefaultTypeMappings = useDefaultTypeMappings;
             _failOnUnmappedFiles = failOnUnmappedFiles;
+            _cleanOnDispose = cleanOnDispose;
 
             BuildDirectory = buildDirectory ?? ComputeBuildDirectory();
         }
@@ -166,15 +171,18 @@ namespace EdCanHack.XnaContent
         {
             if (IsDisposed) return;
             IsDisposed = true;
-            
-            CleanUpSelf();
-            CleanUpOldTempDirectories();
+
+            if (_cleanOnDispose)
+            {
+                CleanUpSelf();
+                CleanUpOldTempDirectories();
+            }
         }
 
         public IEnumerable<String> Filenames { get { return _files.Keys; } } 
         public IEnumerable<QueuedContentFile> Files { get { return _files.Values; } } 
 
-        public void Add(String filename)
+        public Boolean Add(String filename)
         {
             TypeMapping tm = null;
             tm = _typeMappings.FirstOrDefault(t => t.FileMatcher.IsMatch(filename));
@@ -184,14 +192,15 @@ namespace EdCanHack.XnaContent
                 tm = DefaultTypeMappings.FirstOrDefault(t => t.FileMatcher.IsMatch(filename));
             }
 
-            if (tm == null && _failOnUnmappedFiles)
+            if (tm == null)
             {
-                throw new ContentEngineException("No TypeMapping found for '{0}'.", filename);
+                if (_failOnUnmappedFiles) throw new ContentEngineException("No TypeMapping found for '{0}'.", filename);
+                return false;
             }
 
-            if (tm != null) Add(filename, tm.ImporterType, tm.ProcessorType);
+            return Add(filename, tm.ImporterType, tm.ProcessorType);
         }
-        public void Add(String filename, Type importerType, Type processorType)
+        public Boolean Add(String filename, Type importerType, Type processorType)
         {
             filename = Path.GetFullPath(filename);
 
@@ -221,8 +230,10 @@ namespace EdCanHack.XnaContent
             QueuedContentFile q = new QueuedContentFile(filename, baseName, importerType, processorType);
 
             _files.Add(q.Filename, q);
-
+            
             if (ItemAdded != null) ItemAdded(q);
+
+            return true;
         }
 
         public Boolean Remove(String filename)
@@ -265,6 +276,8 @@ namespace EdCanHack.XnaContent
                 ProjectCollection projectCollection = ProjectCollection.GlobalProjectCollection;
 
                 Project project = ConstructStandardProject(projectPath, outputPath);
+
+                //project.SetProperty("XnaCompressContent", "True");
 
                 foreach (QueuedContentFile q in _files.Values)
                 {
